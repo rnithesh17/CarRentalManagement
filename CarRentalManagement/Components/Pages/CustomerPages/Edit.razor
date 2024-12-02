@@ -73,6 +73,9 @@ else
 </div>
 
 @code {
+
+    private string userId = "System";
+    @inject AuthenticationStateProvider authenticationStateProvider
     [SupplyParameterFromQuery]
     private int Id { get; set; }
 
@@ -81,6 +84,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var userIdClaim = user.FindFirst("userId");
+        if (userIdClaim != null)
+        {
+            userId = userIdClaim.Value;
+        }
         using var context = DbFactory.CreateDbContext();
         Customer ??= await context.Customer.FirstOrDefaultAsync(m => m.Id == Id);
 
@@ -96,6 +107,13 @@ else
     {
         using var context = DbFactory.CreateDbContext();
         context.Attach(Customer!).State = EntityState.Modified;
+
+
+        Customer.UpdatedBy = userId;
+
+        Customer.DateUpdated = DateTime.Now;
+
+
 
         try
         {
